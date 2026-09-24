@@ -682,6 +682,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 🤖 BOT STATUS INDICATOR
   // ══════════════════════════════════════════════════
   function updateBotStatus(isOnline, count = 0) {
+    if (!botStatusDot || !botStatusText) return;
     if (isOnline && count > 0) {
       botStatusDot.className = 'bot-status-dot online';
       botStatusText.className = 'bot-status-text online';
@@ -1108,7 +1109,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // ══════════════════════════════════════════════════
   // 🔑 REQUEST PAIRING + COPY BUTTON
   // ══════════════════════════════════════════════════
-  requestPairingBtn.addEventListener("click", async () => {
+  if (!requestPairingBtn || !phoneInput) { console.error("Pair UI elements missing"); }
+  requestPairingBtn && requestPairingBtn.addEventListener("click", async () => {
     const number = phoneInput.value.trim();
 
     if (!number) {
