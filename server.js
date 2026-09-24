@@ -677,19 +677,13 @@ app.post("/api/pair", async (req, res) => {
             printQRInTerminal: false,
             auth: state,
             version,
-            browser: Browsers.macOS("Safari"),
+            browser: ["Ubuntu", "Chrome", "22.04.4"],
             connectTimeoutMs: 60000,
             keepAliveIntervalMs: 25000,
-            maxIdleTimeMs: 60000,
-            maxRetries: 10,
-            markOnlineOnConnect: true,
-            emitOwnEvents: true,
-            defaultQueryTimeoutMs: 60000,
+            markOnlineOnConnect: false,
+            generateHighQualityLinkPreview: false,
             syncFullHistory: false,
-            transactionOpts: {
-                maxCommitRetries: 10,
-                delayBetweenTriesMs: 3000
-            }
+            getMessage: async () => undefined,
         });
 
         // Check if this is a new user (first time connection) — kept for the
@@ -720,19 +714,47 @@ app.post("/api/pair", async (req, res) => {
         // Set up connection event handlers FIRST
         setupConnectionHandlers(conn, normalizedNumber, io, saveCreds, true);
 
-        // Wait a moment for the connection to initialize
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Wait until socket is actually connecting/open before requesting code
+        await new Promise((resolve) => {
+            let done = false;
+            const finish = () => { if (!done) { done = true; resolve(); } };
+            const t = setTimeout(finish, 8000);
+            conn.ev.on("connection.update", (u) => {
+                if (u.connection === "connecting" || u.connection === "open" || u.qr) {
+                    clearTimeout(t);
+                    finish();
+                }
+            });
+        });
 
-        // Request pairing code
-        const pairingCode = await conn.requestPairingCode(normalizedNumber);
+        // Small extra delay helps Baileys finish handshake
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Request pairing code with one retry on Connection Closed
+        let pairingCode;
+        try {
+            pairingCode = await conn.requestPairingCode(normalizedNumber);
+        } catch (e1) {
+            console.error("Pair code attempt 1 failed:", e1.message);
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            try {
+                pairingCode = await conn.requestPairingCode(normalizedNumber);
+            } catch (e2) {
+                throw e2;
+            }
+        }
+
+        if (!pairingCode) throw new Error("Empty pairing code from WhatsApp");
+
+        // Format as XXXX-XXXX for easier entry
+        const formatted = String(pairingCode).replace(/(.{4})/g, "$1-").replace(/-$/, "");
         
-        // Store the pairing code
         pairingCodes.set(normalizedNumber, { code: pairingCode, timestamp: Date.now() });
 
-        // Return the pairing code to the frontend
         res.json({ 
             success: true, 
-            pairingCode,
+            pairingCode: formatted,
+            rawCode: pairingCode,
             sessionId: normalizedNumber,
             message: "Pairing code generated successfully",
             isNewUser: isNewUser
@@ -742,13 +764,12 @@ app.post("/api/pair", async (req, res) => {
         console.error("Error generating pairing code:", error);
         
         if (conn) {
-            try {
-                conn.ws.close();
-            } catch (e) {}
+            try { conn.end(undefined); } catch (e) {}
+            try { conn.ws?.close(); } catch (e) {}
         }
         
         res.status(500).json({ 
-            error: "Failed to generate pairing code",
+            error: "Failed to generate pairing code. Wait 30 seconds and try again.",
             details: error.message 
         });
     }
