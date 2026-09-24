@@ -373,6 +373,57 @@
 
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="scripts.js?v=6"></script>
+  <script src="scripts.js?v=7"></script>
+
+<!-- ===== SIMPLE PAIR FALLBACK (works even if main JS fails) ===== -->
+<div id="simplePairBox" style="max-width:420px;margin:20px auto;padding:16px;background:rgba(0,0,0,0.35);border-radius:16px;border:1px solid rgba(108,58,219,0.4);">
+  <div style="text-align:center;color:#c4b5fd;font-weight:700;margin-bottom:10px;">⚡ Quick Pair (Backup)</div>
+  <input id="spNumber" type="tel" placeholder="923001234567" inputmode="numeric"
+    style="width:100%;padding:12px;border-radius:10px;border:none;font-size:16px;box-sizing:border-box;margin-bottom:10px;" />
+  <button id="spBtn" type="button"
+    style="width:100%;padding:14px;border:none;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#6c3adb);color:#fff;font-weight:700;font-size:16px;cursor:pointer;">
+    Generate Pair Code
+  </button>
+  <div id="spResult" style="margin-top:12px;text-align:center;color:#e9d5ff;font-size:15px;min-height:28px;"></div>
+</div>
+<script>
+(function(){
+  var btn = document.getElementById('spBtn');
+  var num = document.getElementById('spNumber');
+  var out = document.getElementById('spResult');
+  if(!btn||!num||!out) return;
+  btn.addEventListener('click', function(){
+    var n = (num.value||'').replace(/\D/g,'');
+    if(n.length < 8 || n.length > 15){
+      out.innerHTML = '<span style="color:#f87171">❌ Valid number with country code likho (e.g. 923001234567)</span>';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Generating... wait 20 sec';
+    out.innerHTML = '<span style="color:#a78bfa">⏳ Requesting code from WhatsApp...</span>';
+    fetch('/api/pair', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({number:n})
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(x){
+      if(!x.ok){
+        out.innerHTML = '<span style="color:#f87171">❌ '+(x.d.error||x.d.details||'Failed')+'</span>';
+        return;
+      }
+      var code = (x.d.pairingCode||x.d.rawCode||'').toString();
+      out.innerHTML = '<div style="font-size:28px;font-weight:800;letter-spacing:3px;color:#4ade80;margin:8px 0;">'+code+'</div>'+
+        '<div style="color:#86efac;font-size:13px;">WhatsApp → Linked Devices → Link with phone number</div>';
+    }).catch(function(e){
+      out.innerHTML = '<span style="color:#f87171">❌ Network error: '+(e.message||'retry')+'</span>';
+    }).finally(function(){
+      btn.disabled = false;
+      btn.textContent = 'Generate Pair Code';
+    });
+  });
+})();
+</script>
+<!-- ===== END SIMPLE PAIR ===== -->
+
 </body>
 </html>
