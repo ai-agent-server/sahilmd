@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ZAINU-MD 🔥⚜️</title>
+
+  <!-- PWA Support -->
+  <meta name="theme-color" id="metaThemeColor" content="#6c3adb" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ZAINU-MD" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <link rel="icon" type="image/png" href="/icon-192.png" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=8">
+
+</head>
+<body>
+
+  <!-- Animated background orbs -->
+  <div class="bg-orb orb1"></div>
+  <div class="bg-orb orb2"></div>
+  <div class="bg-orb orb3"></div>
+  <div class="particles" id="particles"></div>
+
+  <!-- Confetti Canvas (success animation) -->
+  <canvas id="confettiCanvas"></canvas>
+
+  <!-- Toast Notification -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Top Controls Row -->
+  <div class="top-controls">
+    <!-- Commands Badge -->
+    <button class="commands-badge" id="commandsBadge" title="Tap to view all commands" type="button">
+      <i class="fas fa-terminal"></i>
+      <span id="commandsCount">...</span>
+    </button>
+
+    <!-- FAQ / Help -->
+    <button class="faq-btn" id="faqBtn" title="FAQ / Help" type="button">
+      <i class="fas fa-circle-question"></i>
+    </button>
+
+    <!-- Theme Color Picker -->
+    <div class="color-picker-wrap" id="colorPickerWrap">
+      <button class="color-picker-btn" id="colorPickerBtn" title="Choose Theme Color">
+        <i class="fas fa-palette"></i>
+      </button>
+      <div class="color-options" id="colorOptions">
+        <button class="color-swatch" data-color="purple" style="background:linear-gradient(135deg,#6c3adb,#8b5cf6)" title="Purple"></button>
+        <button class="color-swatch" data-color="red"    style="background:linear-gradient(135deg,#dc2626,#ef4444)" title="Red"></button>
+        <button class="color-swatch" data-color="blue"   style="background:linear-gradient(135deg,#1d4ed8,#3b82f6)" title="Blue"></button>
+        <button class="color-swatch" data-color="green"  style="background:linear-gradient(135deg,#059669,#10b981)" title="Green"></button>
+        <button class="color-swatch" data-color="orange" style="background:linear-gradient(135deg,#ea580c,#f97316)" title="Orange"></button>
+        <button class="color-swatch" data-color="pink"   style="background:linear-gradient(135deg,#be185d,#ec4899)" title="Pink"></button>
+        <button class="color-swatch" data-color="teal"   style="background:linear-gradient(135deg,#0d9488,#14b8a6)" title="Teal"></button>
+        <button class="color-swatch" data-color="indigo" style="background:linear-gradient(135deg,#4338ca,#6366f1)" title="Indigo"></button>
+        <button class="color-swatch color-swatch-custom" id="customColorSwatch" data-color="custom" title="Custom Color">
+          <i class="fas fa-plus"></i>
+        </button>
+        <input type="color" id="customColorInput" class="custom-color-input" value="#6c3adb" aria-label="Pick custom theme color" />
+      </div>
+    </div>
+
+    <!-- Dark/Light Mode Toggle -->
+    <button class="theme-toggle" id="themeToggle" title="Toggle Theme">
+      <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+
+    <!-- Settings -->
+    <div class="settings-wrap" id="settingsWrap">
+      <button class="settings-btn" id="settingsBtn" title="Settings">
+        <i class="fas fa-sliders-h"></i>
+      </button>
+      <div class="settings-panel" id="settingsPanel">
+        <div class="settings-title">Settings</div>
+
+        <div class="settings-panel-body">
+        <div class="settings-row">
+          <span><i class="fas fa-volume-up"></i> Sound Effects</span>
+          <label class="switch">
+            <input type="checkbox" id="soundToggle" checked>
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-row settings-row-stack">
+          <span><i class="fas fa-text-height"></i> Font Size</span>
+          <div class="font-size-group" id="fontSizeGroup">
+            <button class="font-size-btn" data-size="small"  title="Small">A</button>
+            <button class="font-size-btn" data-size="normal" title="Normal">A</button>
+            <button class="font-size-btn" data-size="large"  title="Large">A</button>
+          </div>
+        </div>
+
+        <div class="settings-row settings-row-stack">
+          <span><i class="fas fa-globe"></i> Language</span>
+          <div class="settings-lang-group" id="settingsLangGroup">
+            <button class="settings-lang-btn" data-lang="en" title="English">🇬🇧 EN</button>
+            <button class="settings-lang-btn" data-lang="ur" title="Urdu">🇵🇰 UR</button>
+            <button class="settings-lang-btn" data-lang="hi" title="Hindi">🇮🇳 HI</button>
+            <button class="settings-lang-btn" data-lang="ar" title="Arabic">🇸🇦 AR</button>
+          </div>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-row settings-row-stack">
+          <span><i class="fas fa-face-smile"></i> Avatar Icon</span>
+          <div class="font-size-group" id="avatarIconGroup">
+            <button class="font-size-btn active" data-icon="fa-robot" title="Robot"><i class="fas fa-robot"></i></button>
+            <button class="font-size-btn" data-icon="fa-headset" title="Headset"><i class="fas fa-headset"></i></button>
+            <button class="font-size-btn" data-icon="fa-bolt" title="Bolt"><i class="fas fa-bolt"></i></button>
+            <button class="font-size-btn" data-icon="fa-star-and-crescent" title="Crescent"><i class="fas fa-star-and-crescent"></i></button>
+          </div>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <button class="settings-action" id="refreshStatsBtn">
+          <i class="fas fa-rotate"></i> Refresh Stats
+        </button>
+
+        <button class="settings-action" id="settingsInstallBtn">
+          <i class="fas fa-download"></i> Install App
+        </button>
+
+        <button class="settings-action" id="shareSiteBtn">
+          <i class="fas fa-share-nodes"></i> Share Site
+        </button>
+
+        <button class="settings-action" id="resetThemeBtn">
+          <i class="fas fa-palette"></i> Reset Theme to Default
+        </button>
+
+        <button class="settings-action settings-action-danger" id="clearDataBtn">
+          <i class="fas fa-trash"></i> Clear Saved Data
+        </button>
+
+        <div class="settings-divider"></div>
+        <div class="settings-about">Dr Honey Mini Dashboard <span id="aboutVersion">v1.0.0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main card -->
+  <div class="page-wrapper">
+    <div class="card" id="mainCard">
+      <div class="card-wallpaper" id="cardWallpaper"></div>
+      <div class="card-wallpaper-scrim" id="cardWallpaperScrim"></div>
+
+      <!-- MaShaAllah top label -->
+      <div class="masha-allah-wrap">
+        <span class="masha-allah-text">-•Ξ ⤹•𝐌ᴀ 𝐒ʜᴀ 𝐀ʟʟᴀʜ⎯⎯⃝'°</span>
+      </div>
+
+      <!-- Bot Avatar -->
+      <div class="avatar-wrap">
+        <div class="avatar-spin-ring"></div>
+        <div class="avatar">
+          <i class="fas fa-robot"></i>
+        </div>
+        <div class="avatar-ring"></div>
+        <div class="bot-status-badge" id="botStatusBadge">
+          <span class="bot-status-dot" id="botStatusDot"></span>
+          <span class="bot-status-text" id="botStatusText">Checking...</span>
+        </div>
+      </div>
+
+      <!-- Brand -->
+      <h1 class="brand-name">ZAINU-MD</h1>
+      <p class="brand-sub" data-i18n="brand_sub">Connect your WhatsApp account</p>
+
+      <!-- Social icons -->
+      <div class="social-row">
+        <a href="https://whatsapp.com/channel/0029VbBVJhu5q08bUyXc663a" target="_blank" class="social-btn whatsapp" title="WhatsApp Channel 1">
+          <i class="fab fa-whatsapp"></i>
+        </a>
+        <a href="https://www.instagram.com/seok_chaudhary?igsh=NHUyeDhnOTEyeHFp" target="_blank" class="social-btn instagram" title="Instagram">
+          <i class="fab fa-instagram"></i>
+        </a>
+        <a href="https://youtube.com/@honey_techx?si=yITIbDHu0TdHUAn6" target="_blank" class="social-btn youtube" title="YouTube">
+          <i class="fab fa-youtube"></i>
+        </a>
+        <a href="https://whatsapp.com/channel/0029VadBQndLY6dA8nGkpS09" target="_blank" class="social-btn whatsapp2" title="WhatsApp Channel 2">
+          <i class="fab fa-whatsapp"></i>
+        </a>
+      </div>
+
+      <!-- Pairing Method Tabs -->
+      <div class="pair-method-tabs" id="pairMethodTabs">
+        <button class="pair-method-tab active" data-method="code" id="tabCode" type="button">
+          <i class="fas fa-key"></i> Pair Code
+        </button>
+        <button class="pair-method-tab" data-method="qr" id="tabQr" type="button">
+          <i class="fas fa-qrcode"></i> QR Code
+        </button>
+      </div>
+
+      <!-- Phone input with flag -->
+      <div id="codeMethodPanel">
+        <label class="input-label">
+          <i class="fas fa-phone-alt"></i>
+          <span data-i18n="phone_label">Enter your WhatsApp number with country code</span>
+        </label>
+        <div class="input-wrap">
+          <div class="flag-display" id="flagDisplay">
+            <span id="flagEmoji">🌍</span>
+          </div>
+          <input
+            type="tel"
+            id="phone"
+            placeholder="923123456789"
+            autocomplete="off"
+            maxlength="15"
+          />
+        </div>
+        <div class="country-label" id="countryLabel"></div>
+        <span class="input-hint">Example: 923123456789 (92 → 🇵🇰 Pakistan)</span>
+
+        <!-- Generate button -->
+        <button class="gen-btn" id="requestPairing">
+          <i class="fas fa-key"></i>
+          <span data-i18n="generate_btn">Generate Pair Code</span>
+        </button>
+      </div>
+
+      <!-- QR pairing panel -->
+      <div id="qrMethodPanel" style="display:none;">
+        <div class="qr-box" id="qrBox">
+          <span class="placeholder-txt">Tap "Generate QR Code" and scan it with WhatsApp</span>
+        </div>
+        <button class="gen-btn" id="requestQr">
+          <i class="fas fa-qrcode"></i>
+          <span>Generate QR Code</span>
+        </button>
+      </div>
+
+      <!-- Status / Code output -->
+      <div class="code-box" id="status">
+        <span class="placeholder-txt">Your pair code will appear here</span>
+      </div>
+
+      <!-- Countdown Timer (hidden by default) -->
+      <div class="countdown-wrap" id="countdownWrap" style="display:none;">
+        <div class="countdown-bar-bg">
+          <div class="countdown-bar" id="countdownBar"></div>
+        </div>
+        <div class="countdown-text">
+          <i class="fas fa-clock"></i>
+          Code expires in <span id="countdownSec">60</span>s
+        </div>
+      </div>
+
+      <!-- How to Connect Steps -->
+      <div class="steps-wrap" id="stepsWrap" style="display:none;">
+        <div class="steps-title"><i class="fas fa-list-ol"></i> How to Connect</div>
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-text" id="stepText1">Copy the 8-digit code above</div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-text">Open <b>WhatsApp</b> on your phone</div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-text">Go to <b>Settings → Linked Devices</b></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-text">Tap <b>"Link a Device"</b></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">5</div>
+          <div class="step-text" id="stepText5">Choose <b>"Link with phone number"</b> and enter the code</div>
+        </div>
+      </div>
+
+      <!-- Install PWA Banner -->
+      <div class="pwa-banner" id="pwaBanner" style="display:none;">
+        <i class="fas fa-download"></i>
+        <span>Install as App on your phone!</span>
+        <button id="pwaInstallBtn">Install</button>
+        <button id="pwaDismiss"><i class="fas fa-times"></i></button>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer-wrap">
+        <p class="footer-txt">© <span id="year"></span> <span class="footer-brand">𝐃ʀ 𝐇ᴏɴᴇʏ 𝐓ᴇᴄʜ𝐗</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Screen Overlay -->
+  <div class="success-overlay" id="successOverlay" style="display:none;">
+    <div class="success-card">
+      <div class="success-icon">🎉</div>
+      <h2>Successfully Connected!</h2>
+      <p id="successSessionId"></p>
+      <div class="fireworks" id="fireworks"></div>
+      <button class="success-close-btn" id="successCloseBtn">Continue</button>
+    </div>
+  </div>
+
+
+
+  <!-- ========== COMMANDS LIST MODAL ========== -->
+  <div class="commands-modal-overlay" id="commandsModalOverlay">
+    <div class="commands-modal-card">
+      <button class="commands-modal-close" id="commandsModalClose" aria-label="Close">
+        <i class="fas fa-times"></i>
+      </button>
+      <div class="commands-modal-header">
+        <div class="commands-modal-icon"><i class="fas fa-terminal"></i></div>
+        <h2 class="commands-modal-title">All Commands</h2>
+        <p class="commands-modal-subtitle"><span id="commandsModalCount">0</span> commands available</p>
+      </div>
+
+      <div class="commands-search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" id="commandsSearchInput" placeholder="Search commands..." autocomplete="off">
+      </div>
+
+      <div class="commands-modal-body" id="commandsModalBody">
+        <div class="commands-loading"><i class="fas fa-spinner fa-spin"></i> Loading commands...</div>
+      </div>
+
+      <!-- Request a New Command -->
+      <div class="cmd-request-wrap">
+        <button class="cmd-request-toggle" id="cmdRequestToggle" type="button">
+          <i class="fas fa-lightbulb"></i>
+          <span>Didn't find what you need? Request a command</span>
+          <i class="fas fa-chevron-down cmd-request-chevron"></i>
+        </button>
+
+        <div class="cmd-request-form" id="cmdRequestForm">
+          <input type="text" id="cmdRequestName" class="cmd-request-input" placeholder="Command name (e.g. .weather)" maxlength="60" autocomplete="off">
+          <textarea id="cmdRequestDesc" class="cmd-request-textarea" placeholder="What should this command do?" maxlength="500" rows="3"></textarea>
+          <button class="cmd-request-submit" id="cmdRequestSubmit" type="button">
+            <i class="fas fa-paper-plane"></i> Submit Request
+          </button>
+          <div class="cmd-request-hint">You can submit as many requests as you like — one per command.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ========== END COMMANDS LIST MODAL ========== -->
+
+  <!-- ========== FAQ / HELP MODAL ========== -->
+  <div class="faq-modal-overlay" id="faqModalOverlay">
+    <div class="faq-modal-card">
+      <button class="faq-modal-close" id="faqModalClose" aria-label="Close">
+        <i class="fas fa-times"></i>
+      </button>
+      <div class="faq-modal-header">
+        <div class="faq-modal-icon"><i class="fas fa-circle-question"></i></div>
+        <h2 class="faq-modal-title" data-i18n="faq_title">FAQ &amp; Help</h2>
+      </div>
+      <div class="faq-list" id="faqList">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+  <!-- ========== END FAQ / HELP MODAL ========== -->
+
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="scripts.js?v=4"></script>
+</body>
+</html>
