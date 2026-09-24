@@ -1109,9 +1109,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // ══════════════════════════════════════════════════
   // 🔑 REQUEST PAIRING + COPY BUTTON
   // ══════════════════════════════════════════════════
-  if (!requestPairingBtn || !phoneInput) { console.error("Pair UI elements missing"); }
-  requestPairingBtn && requestPairingBtn.addEventListener("click", async () => {
-    const number = phoneInput.value.trim();
+  if (requestPairingBtn && phoneInput) {
+  requestPairingBtn.addEventListener("click", async () => {
+    const number = (phoneInput.value || "").trim().replace(/\D/g, "");
 
     if (!number) {
       showStatus('<span class="status-msg" style="color:#ef4444">❌ Please enter your phone number with country code.</span>', 'error');
@@ -1124,86 +1124,100 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    playGenerateSound();
-    stopCountdown();
-    stepsWrap.style.display = 'none';
+    try { playGenerateSound(); } catch (_) {}
+    try { stopCountdown(); } catch (_) {}
+    try { if (stepsWrap) stepsWrap.style.display = 'none'; } catch (_) {}
+
     requestPairingBtn.disabled = true;
     requestPairingBtn.innerHTML = '<span class="spinner"></span> Generating...';
-    showStatus('<span class="status-msg" style="color:#6c3adb"><span class="spinner" style="border-color:rgba(108,58,219,0.3);border-top-color:#6c3adb;"></span> &nbsp;Requesting your pair code…</span>', '');
-    showToast('Generating your pair code...', 'info', 2500);
+    showStatus('<span class="status-msg" style="color:#6c3adb"><span class="spinner" style="border-color:rgba(108,58,219,0.3);border-top-color:#6c3adb;"></span> &nbsp;Requesting pair code… wait 15–30 sec</span>', '');
+    showToast('Generating pair code, please wait…', 'info', 4000);
+
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), 90000) : null;
 
     try {
-      const res  = await fetch("/api/pair", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ number, socketId: socket.id }),
+      const res = await fetch("/api/pair", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ number, socketId: (socket && socket.id) ? socket.id : undefined }),
+        signal: controller ? controller.signal : undefined,
       });
-      const data = await res.json();
+      let data = {};
+      try { data = await res.json(); } catch (_) { data = {}; }
 
       if (!res.ok) {
-        showStatus(`<span class="status-msg" style="color:#ef4444">❌ ${data.error || "Failed to get pairing code."}</span>`, 'error');
-        showToast(data.error || 'Failed to get pairing code.', 'error');
+        showStatus(`<span class="status-msg" style="color:#ef4444">❌ ${data.error || data.details || "Failed to get pairing code."}</span>`, 'error');
+        showToast(data.error || 'Failed to get pairing code. Try again.', 'error');
         return;
       }
 
-      const code   = (data.pairingCode || "").toString().trim();
-      const spaced = code.match(/.{1,4}/g)?.join(' ') || code;
+      const code = (data.pairingCode || data.rawCode || "").toString().trim();
+      if (!code) {
+        showStatus('<span class="status-msg" style="color:#ef4444">❌ Empty code from server. Try again.</span>', 'error');
+        showToast('Empty code. Try again.', 'error');
+        return;
+      }
+      const spaced = code.replace(/-/g, '').match(/.{1,4}/g)?.join('-') || code;
 
       showStatus(`
         <div style="width:100%;text-align:center;">
           <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:nowrap;">
             <div class="pairing-code" id="pairingCode">${spaced}</div>
-            <button class="copy-btn" id="copyBtn">
+            <button class="copy-btn" id="copyBtn" type="button">
               <i class="fas fa-copy"></i> Copy
             </button>
           </div>
           <div class="pair-label" style="margin-top:4px;">
-            <i class="fas fa-hand-pointer" style="font-size:0.7rem;"></i> Tap code or use Copy button
+            <i class="fas fa-hand-pointer" style="font-size:0.7rem;"></i> Enter this code in WhatsApp → Linked Devices
           </div>
         </div>
       `, 'success');
 
-      playGenerateSound();
-      showToast('Pair code generated! Copy and enter in WhatsApp.', 'success');
-      stepsWrap.style.display = 'none';
-      loadUsageData();
-      startCountdown(60);
-
-      // Track daily usage
-      fetch('/api/usage/track', { method:'POST' }).catch(()=>{});
+      try { playGenerateSound(); } catch (_) {}
+      showToast('Pair code ready! Enter in WhatsApp.', 'success');
+      try { if (stepsWrap) stepsWrap.style.display = 'none'; } catch (_) {}
+      try { loadUsageData(); } catch (_) {}
+      try { startCountdown(60); } catch (_) {}
+      try { fetch('/api/usage/track', { method:'POST' }).catch(()=>{}); } catch (_) {}
 
       const copyBtn = document.getElementById("copyBtn");
       const codeEl  = document.getElementById("pairingCode");
-
       function doCopy() {
-        navigator.clipboard.writeText(code).then(() => {
-          copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-          copyBtn.classList.add('copied');
-          showToast('Code copied to clipboard!', 'success', 2000);
+        const raw = code.replace(/-/g, '');
+        navigator.clipboard.writeText(raw).then(() => {
+          if (copyBtn) {
+            copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            copyBtn.classList.add('copied');
+          }
+          showToast('Code copied!', 'success', 2000);
           setTimeout(() => {
-            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
-            copyBtn.classList.remove('copied');
+            if (copyBtn) {
+              copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+              copyBtn.classList.remove('copied');
+            }
           }, 2000);
-        }).catch(() => {
-          const range = document.createRange();
-          range.selectNode(codeEl);
-          window.getSelection().removeAllRanges();
-          window.getSelection().addRange(range);
-          showToast('Select & copy the code manually.', 'warning');
-        });
+        }).catch(() => showToast('Long-press the code to copy', 'warning'));
       }
-
       if (copyBtn) copyBtn.addEventListener("click", doCopy);
       if (codeEl)  codeEl.addEventListener("click", doCopy);
 
     } catch (err) {
-      showStatus('<span class="status-msg" style="color:#ef4444">❌ Network error. Please try again.</span>', 'error');
-      showToast('Network error. Try again.', 'error');
+      const msg = (err && err.name === 'AbortError')
+        ? 'Timeout — server took too long. Try again.'
+        : ('Network error: ' + (err && err.message ? err.message : 'try again'));
+      showStatus('<span class="status-msg" style="color:#ef4444">❌ ' + msg + '</span>', 'error');
+      showToast(msg, 'error');
+      console.error('Pair error:', err);
     } finally {
+      if (timer) clearTimeout(timer);
       requestPairingBtn.disabled = false;
       requestPairingBtn.innerHTML = '<i class="fas fa-key"></i> Generate Pair Code';
     }
   });
+  } else {
+    console.error('Pair UI missing: button or phone input not found');
+  }
 
   // ── Socket events ────────────────────────────────────────
   socket.on("linked", ({ sessionId }) => {
